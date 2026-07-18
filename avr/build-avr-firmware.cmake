@@ -80,8 +80,6 @@ function(build_avr_firmware TARGET)
         COMMAND /bin/sh -c
             "${CMAKE_OBJDUMP} -h -S '$<TARGET_FILE:${TARGET}>' > '${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.lss'"
         COMMAND ${AVR_SIZE}
-            -C
-            --mcu=${AVR_MCU}
             $<TARGET_FILE:${TARGET}>
         BYPRODUCTS
             ${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.hex

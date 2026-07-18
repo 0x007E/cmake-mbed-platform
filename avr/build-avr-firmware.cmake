@@ -1,8 +1,8 @@
 function(build_avr_firmware TARGET)
     set(options)
-    set(oneValueArgs MCU F_CPU OUTPUT_NAME DFP_ROOT)
+    set(oneValueArgs MCU F_CPU OUTPUT_NAME DFP_ROOT FLASH_BYTES RAM_BYTES EEPROM_BYTES SIZE_WRAPPER)
     set(multiValueArgs SOURCES INCLUDES DEFINES COMPILE_OPTIONS LINK_OPTIONS)
-    
+
     cmake_parse_arguments(AVR "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if(NOT AVR_MCU)
@@ -63,12 +63,13 @@ function(build_avr_firmware TARGET)
         OUTPUT_NAME ${AVR_OUTPUT_NAME}
     )
 
-    add_custom_command(TARGET ${TARGET} POST_BUILD
+    set(post_build_commands
         COMMAND ${CMAKE_OBJCOPY}
             -O ihex
             -R .eeprom -R .fuse -R .lock -R .signature -R .user_signatures
             $<TARGET_FILE:${TARGET}>
             ${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.hex
+
         COMMAND ${CMAKE_OBJCOPY}
             -j .eeprom
             --set-section-flags=.eeprom=alloc,load
@@ -77,10 +78,46 @@ function(build_avr_firmware TARGET)
             -O ihex
             $<TARGET_FILE:${TARGET}>
             ${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.eep
+
         COMMAND /bin/sh -c
             "${CMAKE_OBJDUMP} -h -S '$<TARGET_FILE:${TARGET}>' > '${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.lss'"
-        COMMAND ${AVR_SIZE}
-            $<TARGET_FILE:${TARGET}>
+    )
+
+    if(AVR_SIZE_WRAPPER)
+        if(NOT EXISTS "${AVR_SIZE_WRAPPER}")
+            message(FATAL_ERROR "build_avr_firmware(${TARGET}): SIZE_WRAPPER not found: ${AVR_SIZE_WRAPPER}")
+        endif()
+
+        if(NOT AVR_FLASH_BYTES)
+            message(FATAL_ERROR "build_avr_firmware(${TARGET}): FLASH_BYTES missing")
+        endif()
+
+        if(NOT AVR_RAM_BYTES)
+            message(FATAL_ERROR "build_avr_firmware(${TARGET}): RAM_BYTES missing")
+        endif()
+
+        if(NOT AVR_EEPROM_BYTES)
+            message(FATAL_ERROR "build_avr_firmware(${TARGET}): EEPROM_BYTES missing")
+        endif()
+
+        list(APPEND post_build_commands
+            COMMAND ${AVR_SIZE_WRAPPER}
+                --avr-size ${AVR_SIZE}
+                --mcu ${AVR_MCU}
+                --flash ${AVR_FLASH_BYTES}
+                --ram ${AVR_RAM_BYTES}
+                --eeprom ${AVR_EEPROM_BYTES}
+                --elf $<TARGET_FILE:${TARGET}>
+        )
+    else()
+        list(APPEND post_build_commands
+            COMMAND ${AVR_SIZE}
+                $<TARGET_FILE:${TARGET}>
+        )
+    endif()
+
+    add_custom_command(TARGET ${TARGET} POST_BUILD
+        ${post_build_commands}
         BYPRODUCTS
             ${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.hex
             ${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.eep

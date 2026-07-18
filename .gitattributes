@@ -1,0 +1,7 @@
+# Standard: Normalize line endings for all files
+* text=auto
+
+# Scripts and CMake files should always use LF line endings
+*.sh           text eol=lf
+*.cmake        text eol=lf
+CMakeLists.txt text eol=lf

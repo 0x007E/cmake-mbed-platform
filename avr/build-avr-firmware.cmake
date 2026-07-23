@@ -35,7 +35,7 @@ function(build_avr_firmware TARGET)
 
     target_compile_options(${TARGET} PRIVATE
         -mmcu=${AVR_MCU}
-        -B ${AVR_DFP_ROOT}/gcc/dev/${AVR_MCU}
+        -mdfp ${AVR_DFP_ROOT}/gcc/dev/${AVR_MCU}
         -funsigned-char
         -funsigned-bitfields
         -ffunction-sections
@@ -51,7 +51,7 @@ function(build_avr_firmware TARGET)
 
     target_link_options(${TARGET} PRIVATE
         -mmcu=${AVR_MCU}
-        -B ${AVR_DFP_ROOT}/gcc/dev/${AVR_MCU}
+        -mdfp ${AVR_DFP_ROOT}/gcc/dev/${AVR_MCU}
         -Wl,--gc-sections
         -Wl,-Map=${CMAKE_BINARY_DIR}/${AVR_OUTPUT_NAME}.map
         ${AVR_LINK_OPTIONS}
